@@ -14,6 +14,13 @@ class ProductController extends Controller
     {
         return ProductResource::collection(Product::with('category')->get());
     }
+
+    public function show(Product $product)
+    {
+        $product->load('category');
+        return new ProductResource($product);
+    }
 }
+
 
 
