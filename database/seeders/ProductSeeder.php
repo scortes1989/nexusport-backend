@@ -32,6 +32,7 @@ class ProductSeeder extends Seeder
                 ],
                 'featured' => true,
                 'stock' => 15,
+                'image_url' => 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=600&q=80',
             ],
             [
                 'category_slug' => 'calzado',
@@ -50,6 +51,7 @@ class ProductSeeder extends Seeder
                 ],
                 'featured' => true,
                 'stock' => 22,
+                'image_url' => 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
             ],
             [
                 'category_slug' => 'pantalones',
@@ -68,6 +70,7 @@ class ProductSeeder extends Seeder
                 ],
                 'featured' => true,
                 'stock' => 8,
+                'image_url' => 'https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=600&q=80',
             ],
             [
                 'category_slug' => 'poleras',
@@ -86,6 +89,7 @@ class ProductSeeder extends Seeder
                 ],
                 'featured' => false,
                 'stock' => 30,
+                'image_url' => 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80',
             ],
             [
                 'category_slug' => 'accesorios',
@@ -104,6 +108,7 @@ class ProductSeeder extends Seeder
                 ],
                 'featured' => false,
                 'stock' => 5,
+                'image_url' => 'https://images.unsplash.com/photo-1551854838-212c50b4c184?auto=format&fit=crop&w=600&q=80',
             ],
             [
                 'category_slug' => 'accesorios',
@@ -122,6 +127,7 @@ class ProductSeeder extends Seeder
                 ],
                 'featured' => false,
                 'stock' => 45,
+                'image_url' => 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=600&q=80',
             ],
         ];
 
@@ -132,5 +138,4 @@ class ProductSeeder extends Seeder
             \App\Models\Product::create($prod);
         }
     }
-
 }

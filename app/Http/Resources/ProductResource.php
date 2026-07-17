@@ -27,7 +27,9 @@ class ProductResource extends JsonResource
             'specs' => $this->specs,
             'featured' => (bool) $this->featured,
             'stock' => (int) $this->stock,
+            'imageUrl' => $this->image_url,
         ];
     }
+
 
 }

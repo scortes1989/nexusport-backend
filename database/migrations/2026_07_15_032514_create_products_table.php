@@ -24,8 +24,10 @@ return new class extends Migration
             $table->json('specs');
             $table->boolean('featured')->default(false);
             $table->integer('stock')->default(0);
+            $table->string('image_url')->nullable();
             $table->timestamps();
         });
+
 
     }
 
