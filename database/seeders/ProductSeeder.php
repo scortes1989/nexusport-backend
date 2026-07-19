@@ -31,8 +31,13 @@ class ProductSeeder extends Seeder
                     ['label' => 'Corte', 'value' => 'Ajuste deportivo (Active Fit)'],
                 ],
                 'featured' => true,
-                'stock' => 15,
                 'image_url' => 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=600&q=80',
+                'sizes' => [
+                    ['size' => 'S', 'stock' => 5],
+                    ['size' => 'M', 'stock' => 8],
+                    ['size' => 'L', 'stock' => 0],
+                    ['size' => 'XL', 'stock' => 2],
+                ],
             ],
             [
                 'category_slug' => 'calzado',
@@ -50,8 +55,15 @@ class ProductSeeder extends Seeder
                     ['label' => 'Tipo de Pisada', 'value' => 'Neutra'],
                 ],
                 'featured' => true,
-                'stock' => 22,
                 'image_url' => 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+                'sizes' => [
+                    ['size' => '39', 'stock' => 3],
+                    ['size' => '40', 'stock' => 0],
+                    ['size' => '41', 'stock' => 8],
+                    ['size' => '42', 'stock' => 6],
+                    ['size' => '43', 'stock' => 5],
+                    ['size' => '44', 'stock' => 0],
+                ],
             ],
             [
                 'category_slug' => 'pantalones',
@@ -69,8 +81,12 @@ class ProductSeeder extends Seeder
                     ['label' => 'Bolsillos', 'value' => 'Bolsillo trasero con cierre para llaves/móvil'],
                 ],
                 'featured' => true,
-                'stock' => 8,
                 'image_url' => 'https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=600&q=80',
+                'sizes' => [
+                    ['size' => 'S', 'stock' => 3],
+                    ['size' => 'M', 'stock' => 5],
+                    ['size' => 'L', 'stock' => 0],
+                ],
             ],
             [
                 'category_slug' => 'poleras',
@@ -88,8 +104,12 @@ class ProductSeeder extends Seeder
                     ['label' => 'Detalles', 'value' => 'Orificios para los pulgares en puños'],
                 ],
                 'featured' => false,
-                'stock' => 30,
                 'image_url' => 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80',
+                'sizes' => [
+                    ['size' => 'S', 'stock' => 10],
+                    ['size' => 'M', 'stock' => 12],
+                    ['size' => 'L', 'stock' => 8],
+                ],
             ],
             [
                 'category_slug' => 'accesorios',
@@ -107,8 +127,10 @@ class ProductSeeder extends Seeder
                     ['label' => 'Ajuste', 'value' => 'Doble correa de esternón de tensión rápida'],
                 ],
                 'featured' => false,
-                'stock' => 5,
                 'image_url' => 'https://images.unsplash.com/photo-1551854838-212c50b4c184?auto=format&fit=crop&w=600&q=80',
+                'sizes' => [
+                    ['size' => 'Única', 'stock' => 5],
+                ],
             ],
             [
                 'category_slug' => 'accesorios',
@@ -126,16 +148,24 @@ class ProductSeeder extends Seeder
                     ['label' => 'Diseño', 'value' => 'Estructura anatómica izquierda/derecha'],
                 ],
                 'featured' => false,
-                'stock' => 45,
                 'image_url' => 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=600&q=80',
+                'sizes' => [
+                    ['size' => 'Única', 'stock' => 45],
+                ],
             ],
         ];
 
         foreach ($products as $prod) {
             $catSlug = $prod['category_slug'];
             unset($prod['category_slug']);
+            
+            $sizes = $prod['sizes'];
+            unset($prod['sizes']);
+            
             $prod['category_id'] = $categories[$catSlug]->id;
-            \App\Models\Product::create($prod);
+            $product = \App\Models\Product::create($prod);
+            
+            $product->sizes()->createMany($sizes);
         }
     }
 }

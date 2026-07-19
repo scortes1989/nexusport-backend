@@ -31,8 +31,17 @@ class ProductFactory extends Factory
                 ['label' => 'Cuidado', 'value' => 'Lavar a máquina'],
             ],
             'featured' => $this->faker->boolean(),
-            'stock' => $this->faker->numberBetween(1, 20),
         ];
+    }
+
+    public function configure()
+    {
+        return $this->afterCreating(function (Product $product) {
+            $product->sizes()->createMany([
+                ['size' => 'S', 'stock' => 5],
+                ['size' => 'M', 'stock' => 10],
+            ]);
+        });
     }
 
 }

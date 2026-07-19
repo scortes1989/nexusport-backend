@@ -26,10 +26,12 @@ class ProductResource extends JsonResource
             'reviewsCount' => (int) $this->reviews_count,
             'specs' => $this->specs,
             'featured' => (bool) $this->featured,
-            'stock' => (int) $this->stock,
+            'stock' => (int) $this->sizes->sum('stock'),
+            'sizes' => ProductSizeResource::collection($this->sizes),
             'imageUrl' => $this->image_url,
         ];
     }
+
 
 
 }

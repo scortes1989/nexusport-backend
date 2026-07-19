@@ -33,6 +33,7 @@ class ProductTest extends TestCase
                     'specs',
                     'featured',
                     'stock',
+                    'sizes',
                     'imageUrl',
                 ]
             ]
@@ -70,6 +71,7 @@ class ProductTest extends TestCase
                 'specs',
                 'featured',
                 'stock',
+                'sizes',
                 'imageUrl',
             ]
         ]);
