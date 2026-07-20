@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             ProductSeeder::class,
             CommuneSeeder::class,
+            PaymentMethodSeeder::class,
         ]);
 
 

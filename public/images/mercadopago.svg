@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" fill="none">
+  <rect width="120" height="40" rx="8" fill="#009EE3"/>
+  <path d="M18 20 C18 17, 24 14, 27 17 C30 14, 36 17, 36 20 C36 23, 30 26, 27 23 C24 26, 18 23, 18 20 Z" stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round" fill="none"/>
+  <text x="45" y="25" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="700" font-size="12px">mercado pago</text>
+</svg>
