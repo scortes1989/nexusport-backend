@@ -10,6 +10,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\CommuneController;
 
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
@@ -19,6 +20,8 @@ Route::get('/cart', [CartController::class, 'index']);
 Route::post('/cart', [CartController::class, 'store']);
 Route::put('/cart', [CartController::class, 'update']);
 Route::delete('/cart', [CartController::class, 'destroy']);
+
+Route::get('/communes', [CommuneController::class, 'index']);
 
 
 
