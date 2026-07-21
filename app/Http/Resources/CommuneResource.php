@@ -18,6 +18,7 @@ class CommuneResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'shippingPrice' => (float) $this->shipping_price,
+            'daysToDeliver' => (int) $this->days_to_deliver,
         ];
     }
 }

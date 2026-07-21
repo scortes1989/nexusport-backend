@@ -15,7 +15,7 @@ use App\Models\Commune;
 use App\Models\CartItem;
 use App\Http\Resources\OrderResource;
 
-class CheckoutController extends Controller
+class OrderController extends Controller
 {
     public function store(Request $request)
     {
@@ -63,11 +63,35 @@ class CheckoutController extends Controller
 
                 // 2. Fetch commune for shipping cost
                 $commune = Commune::findOrFail($request->commune_id);
-                $shippingCost = $subtotal >= 150 ? 0.00 : (float) $commune->shipping_price;
+                $shippingCost = (float) $commune->shipping_price;
                 $total = $subtotal + $shippingCost;
+
+                // Calculate dispatch date (today, or next business day if weekend)
+                $dispatchDate = now();
+                if ($dispatchDate->isWeekend()) {
+                    while ($dispatchDate->isWeekend()) {
+                        $dispatchDate->addDay();
+                    }
+                }
+
+                // Calculate delivery date skipping weekends starting from dispatch date
+                $deliveryDate = clone $dispatchDate;
+                $addedDays = 0;
+                while ($addedDays < $commune->days_to_deliver) {
+                    $deliveryDate->addDay();
+                    if (!$deliveryDate->isWeekend()) {
+                        $addedDays++;
+                    }
+                }
+
+                // Generate unique order code
+                do {
+                    $code = 'ORD-' . strtoupper(Str::random(8));
+                } while (Order::where('code', $code)->exists());
 
                 // 3. Create the Order
                 $order = Order::create([
+                    'code' => $code,
                     'session_id' => $sessionId,
                     'customer_name' => $request->name,
                     'customer_email' => $request->email,
@@ -78,6 +102,8 @@ class CheckoutController extends Controller
                     'total' => $total,
                     'status' => 'paid',
                     'payment_method_id' => $request->payment_method_id,
+                    'estimated_dispatch_date' => $dispatchDate->toDateString(),
+                    'estimated_delivery_date' => $deliveryDate->toDateString(),
                 ]);
 
                 // 4. Create OrderItems & deduct stock
@@ -110,7 +136,7 @@ class CheckoutController extends Controller
             });
 
             // Load relations for the resource mapping
-            $order->load(['commune', 'paymentMethod', 'payment']);
+            $order->load(['items.product', 'items.productSize', 'commune', 'paymentMethod', 'payment']);
 
             return new OrderResource($order);
 
@@ -119,5 +145,21 @@ class CheckoutController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => 'Ocurrió un error al procesar el pago.', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function show(string $id)
+    {
+        $query = Order::query();
+        if (is_numeric($id)) {
+            $query->where(function ($q) use ($id) {
+                $q->where('id', $id)->orWhere('code', $id);
+            });
+        } else {
+            $query->where('code', $id);
+        }
+        $order = $query->firstOrFail();
+
+        $order->load(['items.product', 'items.productSize', 'commune', 'paymentMethod', 'payment']);
+        return new OrderResource($order);
     }
 }

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->decimal('shipping_price', 8, 2);
+            $table->integer('days_to_deliver')->default(2);
             $table->timestamps();
         });
     }

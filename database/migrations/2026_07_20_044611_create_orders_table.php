@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
+            $table->string('code')->unique();
             $table->string('session_id');
             $table->string('customer_name');
             $table->string('customer_email');
@@ -23,6 +24,8 @@ return new class extends Migration
             $table->decimal('total', 8, 2);
             $table->string('status')->default('paid');
             $table->foreignId('payment_method_id')->constrained();
+            $table->date('estimated_dispatch_date')->nullable();
+            $table->date('estimated_delivery_date')->nullable();
             $table->timestamps();
         });
     }

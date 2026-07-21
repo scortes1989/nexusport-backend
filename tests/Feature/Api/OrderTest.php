@@ -13,7 +13,7 @@ use App\Models\Payment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class CheckoutTest extends TestCase
+class OrderTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -28,27 +28,10 @@ class CheckoutTest extends TestCase
     {
         parent::setUp();
 
-        $this->category = Category::create([
-            'name' => 'Chaquetas',
-            'slug' => 'chaquetas',
-            'description' => 'Test Desc',
-        ]);
-
-        $this->product = Product::create([
-            'name' => 'Product Test',
-            'slug' => 'product-test',
-            'price' => 50.00,
-            'description' => 'Desc',
-            'category' => 'Chaquetas',
-            'category_id' => $this->category->id,
-            'stock' => 10,
-        ]);
-
-        $this->productSize = ProductSize::create([
-            'product_id' => $this->product->id,
-            'size' => 'M',
-            'stock' => 5,
-        ]);
+        $this->product = Product::factory()->create(['price' => 50.00]);
+        $this->productSize = $this->product->sizes[0];
+        $this->productSize->update(['stock' => 5]);
+        $this->category = $this->product->category;
 
         $this->commune = Commune::create([
             'name' => 'Providencia',
@@ -79,8 +62,28 @@ class CheckoutTest extends TestCase
         $response->assertJsonFragment(['code' => 'webpay']);
     }
 
-    public function test_can_checkout_successfully(): void
+    public function test_can_create_order_successfully(): void
     {
+        // Calculate expected dispatch date skipping weekends
+        $dispatchDate = now();
+        if ($dispatchDate->isWeekend()) {
+            while ($dispatchDate->isWeekend()) {
+                $dispatchDate->addDay();
+            }
+        }
+        $expectedDispatch = $dispatchDate->toDateString();
+
+        // Calculate expected delivery date skipping weekends starting from dispatch
+        $deliveryDate = clone $dispatchDate;
+        $addedDays = 0;
+        while ($addedDays < 2) {
+            $deliveryDate->addDay();
+            if (!$deliveryDate->isWeekend()) {
+                $addedDays++;
+            }
+        }
+        $expectedDate = $deliveryDate->toDateString();
+
         // 1. Add item to user cart in DB
         CartItem::create([
             'session_id' => $this->sessionId,
@@ -91,7 +94,7 @@ class CheckoutTest extends TestCase
 
         // 2. Perform checkout
         $response = $this->withHeader('X-Session-ID', $this->sessionId)
-            ->postJson('/api/checkout', [
+            ->postJson('/api/orders', [
                 'name' => 'Juan Pérez',
                 'email' => 'juan@example.com',
                 'address' => 'Av Providencia 100',
@@ -103,6 +106,7 @@ class CheckoutTest extends TestCase
         $response->assertJsonStructure([
             'data' => [
                 'id',
+                'code',
                 'customerName',
                 'customerEmail',
                 'shippingAddress',
@@ -114,20 +118,39 @@ class CheckoutTest extends TestCase
                 'paymentMethodName',
                 'transactionId',
                 'createdAt',
+                'estimatedDispatchDate',
+                'estimatedDeliveryDate',
+                'items' => [
+                    '*' => [
+                        'id',
+                        'productId',
+                        'productName',
+                        'productImageUrl',
+                        'size',
+                        'quantity',
+                        'price',
+                    ]
+                ]
             ]
         ]);
 
+        $orderCode = $response->json('data.code');
+        $this->assertNotNull($orderCode);
+
         // 3. Assert database state
         $this->assertDatabaseHas('orders', [
+            'code' => $orderCode,
             'customer_name' => 'Juan Pérez',
             'customer_email' => 'juan@example.com',
-            'total' => 103000.00, // (2 * 50) = 100.00 USD + 3000 CLP. Since the price is 100, shipping is added.
+            'total' => 3100.00,
             'status' => 'paid',
+            'estimated_dispatch_date' => $expectedDispatch . ' 00:00:00',
+            'estimated_delivery_date' => $expectedDate . ' 00:00:00',
         ]);
 
         // Assert payment record was created
         $this->assertDatabaseHas('payments', [
-            'amount' => 103000.00,
+            'amount' => 3100.00,
             'status' => 'completed',
         ]);
 
@@ -140,7 +163,7 @@ class CheckoutTest extends TestCase
         ]);
     }
 
-    public function test_checkout_fails_if_stock_insufficient(): void
+    public function test_order_creation_fails_if_stock_insufficient(): void
     {
         // Add item to user cart in DB with quantity higher than stock (5)
         CartItem::create([
@@ -151,7 +174,7 @@ class CheckoutTest extends TestCase
         ]);
 
         $response = $this->withHeader('X-Session-ID', $this->sessionId)
-            ->postJson('/api/checkout', [
+            ->postJson('/api/orders', [
                 'name' => 'Juan Pérez',
                 'email' => 'juan@example.com',
                 'address' => 'Av Providencia 100',
@@ -164,5 +187,55 @@ class CheckoutTest extends TestCase
 
         // Assert stock remains unchanged (5)
         $this->assertEquals(5, $this->productSize->fresh()->stock);
+    }
+
+    public function test_can_track_order_details(): void
+    {
+        // Create an order directly in DB
+        $order = Order::create([
+            'code' => 'ORD-12345678',
+            'session_id' => $this->sessionId,
+            'customer_name' => 'Juan Pérez',
+            'customer_email' => 'juan@example.com',
+            'shipping_address' => 'Av Providencia 100',
+            'commune_id' => $this->commune->id,
+            'shipping_cost' => 3000.00,
+            'subtotal' => 100000.00,
+            'total' => 103000.00,
+            'status' => 'paid',
+            'payment_method_id' => $this->paymentMethod->id,
+            'estimated_dispatch_date' => '2026-07-24',
+            'estimated_delivery_date' => '2026-07-25',
+        ]);
+
+        // Search by ID
+        $response = $this->getJson("/api/orders/{$order->id}");
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'data' => [
+                'id',
+                'code',
+                'customerName',
+                'customerEmail',
+                'shippingAddress',
+                'communeName',
+                'shippingCost',
+                'subtotal',
+                'total',
+                'status',
+                'paymentMethodName',
+                'transactionId',
+                'createdAt',
+                'estimatedDispatchDate',
+                'estimatedDeliveryDate',
+                'items',
+            ]
+        ]);
+        $response->assertJsonFragment(['code' => 'ORD-12345678']);
+
+        // Search by Code
+        $responseByCode = $this->getJson("/api/orders/ORD-12345678");
+        $responseByCode->assertStatus(200);
+        $responseByCode->assertJsonFragment(['customerName' => 'Juan Pérez']);
     }
 }

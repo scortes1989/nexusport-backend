@@ -8,6 +8,11 @@ class Order extends Model
 {
     protected $guarded = [];
 
+    protected $casts = [
+        'estimated_dispatch_date' => 'date',
+        'estimated_delivery_date' => 'date',
+    ];
+
     public function items()
     {
         return $this->hasMany(OrderItem::class);

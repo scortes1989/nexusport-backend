@@ -16,6 +16,7 @@ class OrderResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'code' => $this->code,
             'customerName' => $this->customer_name,
             'customerEmail' => $this->customer_email,
             'shippingAddress' => $this->shipping_address,
@@ -27,6 +28,9 @@ class OrderResource extends JsonResource
             'paymentMethodName' => $this->paymentMethod ? $this->paymentMethod->name : null,
             'transactionId' => $this->payment ? $this->payment->transaction_id : null,
             'createdAt' => $this->created_at ? $this->created_at->toISOString() : null,
+            'estimatedDispatchDate' => $this->estimated_dispatch_date ? $this->estimated_dispatch_date->toDateString() : null,
+            'estimatedDeliveryDate' => $this->estimated_delivery_date ? $this->estimated_delivery_date->toDateString() : null,
+            'items' => OrderItemResource::collection($this->whenLoaded('items')),
         ];
     }
 }
