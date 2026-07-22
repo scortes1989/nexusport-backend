@@ -221,6 +221,21 @@ class OrderTest extends TestCase
         $this->assertEquals(5, $this->productSize->fresh()->stock);
     }
 
+    public function test_order_creation_fails_when_cart_is_empty(): void
+    {
+        $response = $this->withHeader('X-Session-ID', 'empty-cart-session-123')
+            ->postJson('/api/orders', [
+                'name' => 'Juan Pérez',
+                'email' => 'juan@example.com',
+                'address' => 'Av Providencia 100',
+                'commune_id' => $this->commune->id,
+                'payment_method_id' => $this->paymentMethod->id,
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['cart']);
+    }
+
     public function test_can_track_order_details(): void
     {
         // Create an order directly in DB

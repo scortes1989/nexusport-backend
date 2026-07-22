@@ -22,7 +22,19 @@ class UpdateCartRequest extends FormRequest
     {
         return [
             'session_id' => 'required|string',
-            'quantity' => 'required|integer',
+            'quantity' => [
+                'required',
+                'integer',
+                function ($attribute, $value, $fail) {
+                    $cartItem = $this->route('cartItem');
+                    if ($cartItem && $value > 0) {
+                        $maxStock = $cartItem->productSize ? $cartItem->productSize->stock : 0;
+                        if ($value > $maxStock) {
+                            $fail("No hay suficiente stock disponible (disponible: {$maxStock}).");
+                        }
+                    }
+                },
+            ],
         ];
     }
 }

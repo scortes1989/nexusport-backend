@@ -29,35 +29,25 @@ class CartController extends Controller
         $productSizeId = $request->validated('product_size_id');
         $quantity = $request->validated('quantity');
 
-        $sizeObj = ProductSize::findOrFail($productSizeId);
-        $maxStock = $sizeObj->stock;
-
-        if ($maxStock <= 0) {
-            return response()->json(['message' => 'Producto sin existencias en esta talla.'], 422);
-        }
-
         $item = CartItem::where('session_id', $sessionId)
             ->where('product_id', $productId)
             ->where('product_size_id', $productSizeId)
             ->first();
 
         if ($item) {
-            $newQty = min($item->quantity + $quantity, $maxStock);
-            $item->update(['quantity' => $newQty]);
+            $item->increment('quantity', $quantity);
         } else {
-            CartItem::create([
+            $item = CartItem::create([
                 'session_id' => $sessionId,
                 'product_id' => $productId,
                 'product_size_id' => $productSizeId,
-                'quantity' => min($quantity, $maxStock),
+                'quantity' => $quantity,
             ]);
         }
 
-        $items = CartItem::where('session_id', $sessionId)
-            ->with(['product.sizes', 'product.category', 'productSize'])
-            ->get();
+        $item->load(['product.sizes', 'product.category', 'productSize']);
 
-        return CartItemResource::collection($items);
+        return new CartItemResource($item);
     }
 
     public function update(UpdateCartRequest $request, CartItem $cartItem)
@@ -71,16 +61,13 @@ class CartController extends Controller
 
         if ($quantity <= 0) {
             $cartItem->delete();
-        } else {
-            $maxStock = $cartItem->productSize ? $cartItem->productSize->stock : 0;
-            $cartItem->update(['quantity' => min($quantity, $maxStock)]);
+            return response()->noContent();
         }
 
-        $items = CartItem::where('session_id', $sessionId)
-            ->with(['product.sizes', 'product.category', 'productSize'])
-            ->get();
+        $cartItem->update(['quantity' => $quantity]);
+        $cartItem->load(['product.sizes', 'product.category', 'productSize']);
 
-        return CartItemResource::collection($items);
+        return new CartItemResource($cartItem);
     }
 
     public function destroy(DeleteCartRequest $request, CartItem $cartItem)

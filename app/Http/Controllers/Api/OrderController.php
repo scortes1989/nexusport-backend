@@ -19,57 +19,20 @@ class OrderController extends Controller
 {
     public function store(StoreOrderRequest $request)
     {
-        $sessionId = $request->header('X-Session-ID');
-
+        $sessionId = $request->validated('session_id');
         $cartItems = CartItem::with(['product', 'productSize'])->where('session_id', $sessionId)->get();
-        if ($cartItems->isEmpty()) {
-            return response()->json(['message' => 'El carrito está vacío.'], 400);
-        }
 
         try {
             $order = DB::transaction(function () use ($request, $cartItems, $sessionId) {
-                $subtotal = 0;
-
-                foreach ($cartItems as $item) {
-                    if (!$item->productSize) {
-                        throw ValidationException::withMessages([
-                            'cart' => "El producto {$item->product->name} no tiene una talla válida asociada."
-                        ]);
-                    }
-                    if ($item->quantity > $item->productSize->stock) {
-                        throw ValidationException::withMessages([
-                            'stock' => "No hay suficiente stock para {$item->product->name} en talla {$item->productSize->size}. Stock disponible: {$item->productSize->stock}."
-                        ]);
-                    }
-                    $subtotal += $item->quantity * $item->product->price;
-                }
+                $subtotal = (float) $cartItems->sum(fn ($item) => $item->quantity * $item->product->price);
 
                 $commune = Commune::findOrFail($request->commune_id);
                 $shippingCost = (float) $commune->shipping_price;
                 $total = $subtotal + $shippingCost;
 
-                $dispatchDate = now();
-                if ($dispatchDate->isWeekend()) {
-                    while ($dispatchDate->isWeekend()) {
-                        $dispatchDate->addDay();
-                    }
-                }
-
-                $deliveryDate = clone $dispatchDate;
-                $addedDays = 0;
-                while ($addedDays < $commune->days_to_deliver) {
-                    $deliveryDate->addDay();
-                    if (!$deliveryDate->isWeekend()) {
-                        $addedDays++;
-                    }
-                }
-
-                do {
-                    $code = 'ORD-' . strtoupper(Str::random(8));
-                } while (Order::where('code', $code)->exists());
+                $dates = $commune->calculateDeliveryDates();
 
                 $order = Order::create([
-                    'code' => $code,
                     'session_id' => $sessionId,
                     'customer_name' => $request->name,
                     'customer_email' => $request->email,
@@ -80,8 +43,8 @@ class OrderController extends Controller
                     'total' => $total,
                     'status' => 'paid',
                     'payment_method_id' => $request->payment_method_id,
-                    'estimated_dispatch_date' => $dispatchDate->toDateString(),
-                    'estimated_delivery_date' => $deliveryDate->toDateString(),
+                    'estimated_dispatch_date' => $dates['estimated_dispatch_date'],
+                    'estimated_delivery_date' => $dates['estimated_delivery_date'],
                 ]);
 
                 foreach ($cartItems as $item) {

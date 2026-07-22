@@ -42,18 +42,15 @@ class CartTest extends TestCase
             'X-Session-ID' => 'test-session-id-123'
         ]);
 
-        $response->assertStatus(200);
-        $response->assertJsonCount(1, 'data');
+        $response->assertStatus(201);
         $response->assertJsonStructure([
             'data' => [
-                '*' => [
-                    'id',
-                    'quantity',
-                    'productSizeId',
-                    'size',
-                    'product',
-                    'productSize',
-                ]
+                'id',
+                'quantity',
+                'productSizeId',
+                'size',
+                'product',
+                'productSize',
             ]
         ]);
 
@@ -63,6 +60,24 @@ class CartTest extends TestCase
             'product_size_id' => $productSize->id,
             'quantity' => 2,
         ]);
+    }
+
+    public function test_add_to_cart_fails_when_out_of_stock(): void
+    {
+        $product = Product::factory()->create();
+        $productSize = $product->sizes[0];
+        $productSize->update(['stock' => 0]);
+
+        $response = $this->postJson('/api/cart', [
+            'product_id' => $product->id,
+            'product_size_id' => $productSize->id,
+            'quantity' => 1,
+        ], [
+            'X-Session-ID' => 'test-session-id-123'
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['product_size_id']);
     }
 
     public function test_can_update_cart_item_quantity(): void
@@ -84,7 +99,12 @@ class CartTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $response->assertJsonCount(1, 'data');
+        $response->assertJson([
+            'data' => [
+                'id' => $cartItem->id,
+                'quantity' => 4,
+            ]
+        ]);
 
         $this->assertDatabaseHas('cart_items', [
             'session_id' => 'test-session-id-123',
@@ -135,14 +155,7 @@ class CartTest extends TestCase
             'X-Session-ID' => 'test-session-id-123'
         ]);
 
-        $response->assertStatus(200);
-
-        // Assert quantity is capped to stock 5 in database
-        $this->assertDatabaseHas('cart_items', [
-            'session_id' => 'test-session-id-123',
-            'product_id' => $product->id,
-            'product_size_id' => $productSize->id,
-            'quantity' => 5,
-        ]);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['product_size_id']);
     }
 }
