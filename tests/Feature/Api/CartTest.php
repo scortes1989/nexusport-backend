@@ -18,7 +18,15 @@ class CartTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $response->assertJsonCount(0, 'cart');
+        $response->assertJsonCount(0, 'data');
+    }
+
+    public function test_cart_fails_without_session_id_header(): void
+    {
+        $response = $this->getJson('/api/cart');
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['session_id']);
     }
 
     public function test_can_add_item_to_cart(): void
@@ -35,7 +43,19 @@ class CartTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $response->assertJson(['success' => true]);
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'id',
+                    'quantity',
+                    'productSizeId',
+                    'size',
+                    'product',
+                    'productSize',
+                ]
+            ]
+        ]);
 
         $this->assertDatabaseHas('cart_items', [
             'session_id' => 'test-session-id-123',
@@ -50,23 +70,21 @@ class CartTest extends TestCase
         $product = Product::factory()->create();
         $productSize = $product->sizes[0];
 
-        CartItem::create([
+        $cartItem = CartItem::create([
             'session_id' => 'test-session-id-123',
             'product_id' => $product->id,
             'product_size_id' => $productSize->id,
             'quantity' => 2,
         ]);
 
-        $response = $this->putJson('/api/cart', [
-            'product_id' => $product->id,
-            'product_size_id' => $productSize->id,
+        $response = $this->putJson("/api/cart/{$cartItem->id}", [
             'quantity' => 4,
         ], [
             'X-Session-ID' => 'test-session-id-123'
         ]);
 
         $response->assertStatus(200);
-        $response->assertJson(['success' => true]);
+        $response->assertJsonCount(1, 'data');
 
         $this->assertDatabaseHas('cart_items', [
             'session_id' => 'test-session-id-123',
@@ -81,22 +99,18 @@ class CartTest extends TestCase
         $product = Product::factory()->create();
         $productSize = $product->sizes[0];
 
-        CartItem::create([
+        $cartItem = CartItem::create([
             'session_id' => 'test-session-id-123',
             'product_id' => $product->id,
             'product_size_id' => $productSize->id,
             'quantity' => 2,
         ]);
 
-        $response = $this->deleteJson('/api/cart', [
-            'product_id' => $product->id,
-            'product_size_id' => $productSize->id,
-        ], [
+        $response = $this->deleteJson("/api/cart/{$cartItem->id}", [], [
             'X-Session-ID' => 'test-session-id-123'
         ]);
 
-        $response->assertStatus(200);
-        $response->assertJson(['success' => true]);
+        $response->assertStatus(204);
 
         $this->assertDatabaseMissing('cart_items', [
             'session_id' => 'test-session-id-123',

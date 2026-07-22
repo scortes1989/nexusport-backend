@@ -20,8 +20,8 @@ Route::get('/products/{product}', [ProductController::class, 'show']);
 
 Route::get('/cart', [CartController::class, 'index']);
 Route::post('/cart', [CartController::class, 'store']);
-Route::put('/cart', [CartController::class, 'update']);
-Route::delete('/cart', [CartController::class, 'destroy']);
+Route::put('/cart/{cartItem}', [CartController::class, 'update']);
+Route::delete('/cart/{cartItem}', [CartController::class, 'destroy']);
 
 Route::get('/communes', [CommuneController::class, 'index']);
 Route::get('/payment-methods', [PaymentMethodController::class, 'index']);

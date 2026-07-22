@@ -110,25 +110,48 @@ class OrderTest extends TestCase
                 'customerName',
                 'customerEmail',
                 'shippingAddress',
-                'communeName',
+                'commune' => [
+                    'id',
+                    'name',
+                    'shippingPrice',
+                    'daysToDeliver',
+                ],
                 'shippingCost',
                 'subtotal',
                 'total',
                 'status',
-                'paymentMethodName',
-                'transactionId',
+                'paymentMethod' => [
+                    'id',
+                    'name',
+                    'logo',
+                ],
+                'payment' => [
+                    'id',
+                    'amount',
+                    'status',
+                    'transactionId',
+                    'createdAt',
+                ],
                 'createdAt',
                 'estimatedDispatchDate',
                 'estimatedDeliveryDate',
                 'items' => [
                     '*' => [
                         'id',
-                        'productId',
-                        'productName',
-                        'productImageUrl',
-                        'size',
+                        'productSize' => [
+                            'id',
+                            'size',
+                            'stock',
+                        ],
                         'quantity',
                         'price',
+                        'product' => [
+                            'id',
+                            'name',
+                            'description',
+                            'price',
+                            'imageUrl',
+                        ]
                     ]
                 ]
             ]
@@ -161,6 +184,15 @@ class OrderTest extends TestCase
         $this->assertDatabaseMissing('cart_items', [
             'session_id' => $this->sessionId,
         ]);
+    }
+
+    public function test_order_creation_validation_fails_for_missing_fields(): void
+    {
+        $response = $this->withHeader('X-Session-ID', $this->sessionId)
+            ->postJson('/api/orders', []);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['name', 'email', 'address', 'commune_id', 'payment_method_id']);
     }
 
     public function test_order_creation_fails_if_stock_insufficient(): void
@@ -208,6 +240,14 @@ class OrderTest extends TestCase
             'estimated_delivery_date' => '2026-07-25',
         ]);
 
+        \App\Models\Payment::create([
+            'order_id' => $order->id,
+            'payment_method_id' => $this->paymentMethod->id,
+            'amount' => $order->total,
+            'status' => 'completed',
+            'transaction_id' => 'TX-12345678',
+        ]);
+
         // Search by ID
         $response = $this->getJson("/api/orders/{$order->id}");
         $response->assertStatus(200);
@@ -218,13 +258,28 @@ class OrderTest extends TestCase
                 'customerName',
                 'customerEmail',
                 'shippingAddress',
-                'communeName',
+                'commune' => [
+                    'id',
+                    'name',
+                    'shippingPrice',
+                    'daysToDeliver',
+                ],
                 'shippingCost',
                 'subtotal',
                 'total',
                 'status',
-                'paymentMethodName',
-                'transactionId',
+                'paymentMethod' => [
+                    'id',
+                    'name',
+                    'logo',
+                ],
+                'payment' => [
+                    'id',
+                    'amount',
+                    'status',
+                    'transactionId',
+                    'createdAt',
+                ],
                 'createdAt',
                 'estimatedDispatchDate',
                 'estimatedDeliveryDate',

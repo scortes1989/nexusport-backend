@@ -3,56 +3,33 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\GetCartRequest;
+use App\Http\Requests\AddToCartRequest;
+use App\Http\Requests\UpdateCartRequest;
+use App\Http\Requests\DeleteCartRequest;
 use App\Models\CartItem;
-use App\Models\Product;
-use App\Http\Resources\ProductResource;
+use App\Models\ProductSize;
+use App\Http\Resources\CartItemResource;
 
 class CartController extends Controller
 {
-    private function getSessionId(Request $request): string
+    public function index(GetCartRequest $request)
     {
-        $sessionId = $request->header('X-Session-ID');
-        if (empty($sessionId)) {
-            abort(400, 'Falta la cabecera requerida: X-Session-ID');
-        }
-        return $sessionId;
-    }
-
-    public function index(Request $request)
-    {
-        $sessionId = $this->getSessionId($request);
-        $items = CartItem::where('session_id', $sessionId)
+        $items = CartItem::where('session_id', $request->validated('session_id'))
             ->with(['product.sizes', 'product.category', 'productSize'])
             ->get();
 
-        return response()->json([
-            'cart' => $items->map(function ($item) {
-                return [
-                    'product' => new ProductResource($item->product),
-                    'productSizeId' => (int) $item->product_size_id,
-                    'size' => $item->productSize ? $item->productSize->size : '',
-                    'quantity' => (int) $item->quantity,
-                ];
-            })
-        ]);
+        return CartItemResource::collection($items);
     }
 
-    public function store(Request $request)
+    public function store(AddToCartRequest $request)
     {
-        $sessionId = $this->getSessionId($request);
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'product_size_id' => 'required|exists:product_sizes,id',
-            'quantity' => 'required|integer|min:1',
-        ]);
+        $sessionId = $request->validated('session_id');
+        $productId = $request->validated('product_id');
+        $productSizeId = $request->validated('product_size_id');
+        $quantity = $request->validated('quantity');
 
-        $productId = $request->input('product_id');
-        $productSizeId = $request->input('product_size_id');
-        $quantity = $request->input('quantity');
-
-        // Check stock limit for that specific size in backend
-        $sizeObj = \App\Models\ProductSize::findOrFail($productSizeId);
+        $sizeObj = ProductSize::findOrFail($productSizeId);
         $maxStock = $sizeObj->stock;
 
         if ($maxStock <= 0) {
@@ -76,56 +53,44 @@ class CartController extends Controller
             ]);
         }
 
-        return response()->json(['success' => true]);
+        $items = CartItem::where('session_id', $sessionId)
+            ->with(['product.sizes', 'product.category', 'productSize'])
+            ->get();
+
+        return CartItemResource::collection($items);
     }
 
-    public function update(Request $request)
+    public function update(UpdateCartRequest $request, CartItem $cartItem)
     {
-        $sessionId = $this->getSessionId($request);
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'product_size_id' => 'required|exists:product_sizes,id',
-            'quantity' => 'required|integer',
-        ]);
-
-        $productId = $request->input('product_id');
-        $productSizeId = $request->input('product_size_id');
-        $quantity = $request->input('quantity');
-
-        $item = CartItem::where('session_id', $sessionId)
-            ->where('product_id', $productId)
-            ->where('product_size_id', $productSizeId)
-            ->first();
-
-        if ($item) {
-            if ($quantity <= 0) {
-                $item->delete();
-            } else {
-                $sizeObj = \App\Models\ProductSize::findOrFail($productSizeId);
-                $maxStock = $sizeObj->stock;
-                $item->update(['quantity' => min($quantity, $maxStock)]);
-            }
+        $sessionId = $request->validated('session_id');
+        if ($cartItem->session_id !== $sessionId) {
+            abort(404);
         }
 
-        return response()->json(['success' => true]);
+        $quantity = $request->validated('quantity');
+
+        if ($quantity <= 0) {
+            $cartItem->delete();
+        } else {
+            $maxStock = $cartItem->productSize ? $cartItem->productSize->stock : 0;
+            $cartItem->update(['quantity' => min($quantity, $maxStock)]);
+        }
+
+        $items = CartItem::where('session_id', $sessionId)
+            ->with(['product.sizes', 'product.category', 'productSize'])
+            ->get();
+
+        return CartItemResource::collection($items);
     }
 
-    public function destroy(Request $request)
+    public function destroy(DeleteCartRequest $request, CartItem $cartItem)
     {
-        $sessionId = $this->getSessionId($request);
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'product_size_id' => 'required|exists:product_sizes,id',
-        ]);
+        if ($cartItem->session_id !== $request->validated('session_id')) {
+            abort(404);
+        }
 
-        $productId = $request->input('product_id');
-        $productSizeId = $request->input('product_size_id');
+        $cartItem->delete();
 
-        CartItem::where('session_id', $sessionId)
-            ->where('product_id', $productId)
-            ->where('product_size_id', $productSizeId)
-            ->delete();
-
-        return response()->json(['success' => true]);
+        return response()->noContent();
     }
 }

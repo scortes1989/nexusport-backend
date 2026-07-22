@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CommuneResource;
+use App\Models\Commune;
 use Illuminate\Http\Request;
 
 class CommuneController extends Controller
 {
     public function index()
     {
-        return \App\Http\Resources\CommuneResource::collection(
-            \App\Models\Commune::orderBy('name')->get()
-        );
+        return CommuneResource::collection(Commune::orderBy('name')->get());
     }
 }

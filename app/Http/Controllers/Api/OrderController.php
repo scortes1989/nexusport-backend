@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreOrderRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use App\Models\Order;
@@ -17,26 +17,10 @@ use App\Http\Resources\OrderResource;
 
 class OrderController extends Controller
 {
-    public function store(Request $request)
+    public function store(StoreOrderRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'address' => 'required|string|max:255',
-            'commune_id' => 'required|exists:communes,id',
-            'payment_method_id' => 'required|exists:payment_methods,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
         $sessionId = $request->header('X-Session-ID');
-        if (!$sessionId) {
-            return response()->json(['message' => 'Session ID header is missing.'], 400);
-        }
 
-        // Get the cart items
         $cartItems = CartItem::with(['product', 'productSize'])->where('session_id', $sessionId)->get();
         if ($cartItems->isEmpty()) {
             return response()->json(['message' => 'El carrito está vacío.'], 400);
@@ -46,7 +30,6 @@ class OrderController extends Controller
             $order = DB::transaction(function () use ($request, $cartItems, $sessionId) {
                 $subtotal = 0;
 
-                // 1. Verify stock and calculate subtotal
                 foreach ($cartItems as $item) {
                     if (!$item->productSize) {
                         throw ValidationException::withMessages([
@@ -61,12 +44,10 @@ class OrderController extends Controller
                     $subtotal += $item->quantity * $item->product->price;
                 }
 
-                // 2. Fetch commune for shipping cost
                 $commune = Commune::findOrFail($request->commune_id);
                 $shippingCost = (float) $commune->shipping_price;
                 $total = $subtotal + $shippingCost;
 
-                // Calculate dispatch date (today, or next business day if weekend)
                 $dispatchDate = now();
                 if ($dispatchDate->isWeekend()) {
                     while ($dispatchDate->isWeekend()) {
@@ -74,7 +55,6 @@ class OrderController extends Controller
                     }
                 }
 
-                // Calculate delivery date skipping weekends starting from dispatch date
                 $deliveryDate = clone $dispatchDate;
                 $addedDays = 0;
                 while ($addedDays < $commune->days_to_deliver) {
@@ -84,12 +64,10 @@ class OrderController extends Controller
                     }
                 }
 
-                // Generate unique order code
                 do {
                     $code = 'ORD-' . strtoupper(Str::random(8));
                 } while (Order::where('code', $code)->exists());
 
-                // 3. Create the Order
                 $order = Order::create([
                     'code' => $code,
                     'session_id' => $sessionId,
@@ -106,7 +84,6 @@ class OrderController extends Controller
                     'estimated_delivery_date' => $deliveryDate->toDateString(),
                 ]);
 
-                // 4. Create OrderItems & deduct stock
                 foreach ($cartItems as $item) {
                     OrderItem::create([
                         'order_id' => $order->id,
@@ -116,11 +93,9 @@ class OrderController extends Controller
                         'price' => $item->product->price,
                     ]);
 
-                    // Deduct stock
                     $item->productSize->decrement('stock', $item->quantity);
                 }
 
-                // 5. Create Payment record
                 Payment::create([
                     'order_id' => $order->id,
                     'payment_method_id' => $request->payment_method_id,
@@ -129,13 +104,11 @@ class OrderController extends Controller
                     'transaction_id' => 'TX-' . strtoupper(Str::random(12)),
                 ]);
 
-                // 6. Clear session cart
                 CartItem::where('session_id', $sessionId)->delete();
 
                 return $order;
             });
 
-            // Load relations for the resource mapping
             $order->load(['items.product', 'items.productSize', 'commune', 'paymentMethod', 'payment']);
 
             return new OrderResource($order);
