@@ -18,11 +18,11 @@ use App\Http\Controllers\Api\RegisterController;
 
 // Auth Routes
 Route::post('/register', RegisterController::class);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'destroy']);
+    Route::get('/me', [AuthController::class, 'show']);
     Route::get('/my-orders', [OrderController::class, 'myOrders']);
 });
 

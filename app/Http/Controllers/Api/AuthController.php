@@ -11,7 +11,7 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function login(LoginRequest $request)
+    public function store(LoginRequest $request)
     {
         if (!Auth::attempt($request->only('email', 'password'))) {
             throw ValidationException::withMessages([
@@ -26,14 +26,14 @@ class AuthController extends Controller
             ->additional(['token' => $token]);
     }
 
-    public function logout(Request $request)
+    public function destroy(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
 
         return response()->noContent();
     }
 
-    public function me(Request $request)
+    public function show(Request $request)
     {
         return new UserResource($request->user());
     }
