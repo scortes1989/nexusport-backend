@@ -13,6 +13,18 @@ use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CommuneController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\RegisterController;
+
+// Auth Routes
+Route::post('/register', RegisterController::class);
+Route::post('/login', [AuthController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::get('/my-orders', [OrderController::class, 'myOrders']);
+});
 
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);

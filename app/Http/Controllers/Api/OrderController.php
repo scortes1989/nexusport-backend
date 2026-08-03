@@ -21,9 +21,10 @@ class OrderController extends Controller
     {
         $sessionId = $request->validated('session_id');
         $cartItems = CartItem::with(['product', 'productSize'])->where('session_id', $sessionId)->get();
+        $userId = $request->user('sanctum')?->id;
 
         try {
-            $order = DB::transaction(function () use ($request, $cartItems, $sessionId) {
+            $order = DB::transaction(function () use ($request, $cartItems, $sessionId, $userId) {
                 $subtotal = (float) $cartItems->sum(fn ($item) => $item->quantity * $item->product->price);
 
                 $commune = Commune::findOrFail($request->commune_id);
@@ -34,6 +35,7 @@ class OrderController extends Controller
 
                 $order = Order::create([
                     'session_id' => $sessionId,
+                    'user_id' => $userId,
                     'customer_name' => $request->name,
                     'customer_email' => $request->email,
                     'shipping_address' => $request->address,
@@ -81,6 +83,17 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => 'Ocurrió un error al procesar el pago.', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function myOrders(Request $request)
+    {
+        $orders = $request->user()
+            ->orders()
+            ->with(['items.product', 'items.productSize', 'commune', 'paymentMethod', 'payment'])
+            ->latest()
+            ->get();
+
+        return OrderResource::collection($orders);
     }
 
     public function show(string $id)

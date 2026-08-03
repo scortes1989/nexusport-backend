@@ -308,4 +308,40 @@ class OrderTest extends TestCase
         $responseByCode->assertStatus(200);
         $responseByCode->assertJsonFragment(['customerName' => 'Juan Pérez']);
     }
+
+    public function test_authenticated_user_can_place_order_and_fetch_my_orders(): void
+    {
+        $user = \App\Models\User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+
+        // Add item to cart
+        CartItem::create([
+            'session_id' => $this->sessionId,
+            'product_id' => $this->product->id,
+            'product_size_id' => $this->productSize->id,
+            'quantity' => 1,
+        ]);
+
+        $createResponse = $this->withHeaders([
+            'X-Session-ID' => $this->sessionId,
+            'Authorization' => "Bearer {$token}",
+        ])->postJson('/api/orders', [
+            'name' => 'Usuario Registrado',
+            'email' => $user->email,
+            'address' => 'Av Siempre Viva 123',
+            'commune_id' => $this->commune->id,
+            'payment_method_id' => $this->paymentMethod->id,
+        ]);
+
+        $createResponse->assertStatus(201);
+        $createResponse->assertJsonFragment(['userId' => $user->id]);
+
+        // Fetch my-orders
+        $myOrdersResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/my-orders');
+
+        $myOrdersResponse->assertStatus(200);
+        $myOrdersResponse->assertJsonCount(1, 'data');
+        $myOrdersResponse->assertJsonFragment(['customerName' => 'Usuario Registrado']);
+    }
 }
