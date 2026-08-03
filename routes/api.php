@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RegisterController;
 
+use App\Http\Controllers\Api\AddressController;
+
 // Auth Routes
 Route::post('/register', RegisterController::class);
 Route::post('/login', [AuthController::class, 'store']);
@@ -24,6 +26,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'destroy']);
     Route::get('/me', [AuthController::class, 'show']);
     Route::get('/my-orders', [OrderController::class, 'myOrders']);
+
+    Route::apiResource('addresses', AddressController::class);
+    Route::post('/addresses/{address}/set-default', [AddressController::class, 'setDefault']);
 });
 
 Route::get('/categories', [CategoryController::class, 'index']);
