@@ -6,7 +6,6 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductSize;
 use App\Models\Commune;
-use App\Models\PaymentMethod;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Payment;
@@ -21,7 +20,6 @@ class OrderTest extends TestCase
     private $product;
     private $productSize;
     private $commune;
-    private $paymentMethod;
     private $sessionId = 'test-session-id-123';
 
     protected function setUp(): void
@@ -37,29 +35,6 @@ class OrderTest extends TestCase
             'name' => 'Providencia',
             'shipping_price' => 3000.00,
         ]);
-
-        $this->paymentMethod = PaymentMethod::create([
-            'name' => 'Webpay Plus',
-            'code' => 'webpay',
-            'is_active' => true,
-        ]);
-    }
-
-    public function test_can_list_payment_methods(): void
-    {
-        $response = $this->getJson('/api/payment-methods');
-
-        $response->assertStatus(200);
-        $response->assertJsonStructure([
-            'data' => [
-                '*' => [
-                    'id',
-                    'name',
-                    'code',
-                ]
-            ]
-        ]);
-        $response->assertJsonFragment(['code' => 'webpay']);
     }
 
     public function test_can_create_order_successfully(): void
@@ -99,7 +74,6 @@ class OrderTest extends TestCase
                 'email' => 'juan@example.com',
                 'address' => 'Av Providencia 100',
                 'commune_id' => $this->commune->id,
-                'payment_method_id' => $this->paymentMethod->id,
             ]);
 
         $response->assertStatus(201);
@@ -120,11 +94,6 @@ class OrderTest extends TestCase
                 'subtotal',
                 'total',
                 'status',
-                'paymentMethod' => [
-                    'id',
-                    'name',
-                    'logo',
-                ],
                 'payment' => [
                     'id',
                     'amount',
@@ -192,7 +161,7 @@ class OrderTest extends TestCase
             ->postJson('/api/orders', []);
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['name', 'email', 'address', 'commune_id', 'payment_method_id']);
+        $response->assertJsonValidationErrors(['name', 'email', 'address', 'commune_id']);
     }
 
     public function test_order_creation_fails_if_stock_insufficient(): void
@@ -211,7 +180,6 @@ class OrderTest extends TestCase
                 'email' => 'juan@example.com',
                 'address' => 'Av Providencia 100',
                 'commune_id' => $this->commune->id,
-                'payment_method_id' => $this->paymentMethod->id,
             ]);
 
         $response->assertStatus(422);
@@ -229,7 +197,6 @@ class OrderTest extends TestCase
                 'email' => 'juan@example.com',
                 'address' => 'Av Providencia 100',
                 'commune_id' => $this->commune->id,
-                'payment_method_id' => $this->paymentMethod->id,
             ]);
 
         $response->assertStatus(422);
@@ -250,14 +217,12 @@ class OrderTest extends TestCase
             'subtotal' => 100000.00,
             'total' => 103000.00,
             'status' => 'paid',
-            'payment_method_id' => $this->paymentMethod->id,
             'estimated_dispatch_date' => '2026-07-24',
             'estimated_delivery_date' => '2026-07-25',
         ]);
 
         \App\Models\Payment::create([
             'order_id' => $order->id,
-            'payment_method_id' => $this->paymentMethod->id,
             'amount' => $order->total,
             'status' => 'completed',
             'transaction_id' => 'TX-12345678',
@@ -283,11 +248,6 @@ class OrderTest extends TestCase
                 'subtotal',
                 'total',
                 'status',
-                'paymentMethod' => [
-                    'id',
-                    'name',
-                    'logo',
-                ],
                 'payment' => [
                     'id',
                     'amount',
@@ -330,7 +290,6 @@ class OrderTest extends TestCase
             'email' => $user->email,
             'address' => 'Av Siempre Viva 123',
             'commune_id' => $this->commune->id,
-            'payment_method_id' => $this->paymentMethod->id,
         ]);
 
         $createResponse->assertStatus(201);

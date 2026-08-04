@@ -41,11 +41,6 @@ class Order extends Model
         return $this->belongsTo(Commune::class);
     }
 
-    public function paymentMethod()
-    {
-        return $this->belongsTo(PaymentMethod::class);
-    }
-
     public function user()
     {
         return $this->belongsTo(User::class);

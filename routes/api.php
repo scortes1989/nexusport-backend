@@ -11,14 +11,13 @@ Route::get('/user', function (Request $request) {
 
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CommuneController;
-use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RegisterController;
 
 use App\Http\Controllers\Api\AddressController;
 
-use App\Http\Controllers\Api\UserPaymentMethodController;
+use App\Http\Controllers\Api\PaymentMethodController;
 
 // Auth Routes
 Route::post('/register', RegisterController::class);
@@ -32,8 +31,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('addresses', AddressController::class);
     Route::post('/addresses/{address}/set-default', [AddressController::class, 'setDefault']);
 
-    Route::apiResource('user-payment-methods', UserPaymentMethodController::class);
-    Route::post('/user-payment-methods/{userPaymentMethod}/set-default', [UserPaymentMethodController::class, 'setDefault']);
+    Route::apiResource('payment-methods', PaymentMethodController::class);
+    Route::post('/payment-methods/{paymentMethod}/set-default', [PaymentMethodController::class, 'setDefault']);
 });
 
 Route::get('/categories', [CategoryController::class, 'index']);
@@ -46,7 +45,6 @@ Route::put('/cart/{cartItem}', [CartController::class, 'update']);
 Route::delete('/cart/{cartItem}', [CartController::class, 'destroy']);
 
 Route::get('/communes', [CommuneController::class, 'index']);
-Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/{order}', [OrderController::class, 'show']);
 

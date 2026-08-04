@@ -2,35 +2,27 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\PaymentMethod;
 use App\Models\User;
-use App\Models\UserPaymentMethod;
+use App\Models\PaymentMethod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class UserPaymentMethodTest extends TestCase
+class PaymentMethodTest extends TestCase
 {
     use RefreshDatabase;
 
     private User $user;
-    private PaymentMethod $paymentMethod;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->user = User::factory()->create();
-        $this->paymentMethod = PaymentMethod::create([
-            'name' => 'Tarjeta de Crédito / Débito',
-            'code' => 'credit_card',
-            'is_active' => true,
-        ]);
     }
 
     public function test_authenticated_user_can_create_payment_method(): void
     {
         $response = $this->actingAs($this->user, 'sanctum')
-            ->postJson('/api/user-payment-methods', [
-                'payment_method_id' => $this->paymentMethod->id,
+            ->postJson('/api/payment-methods', [
                 'card_brand' => 'Visa',
                 'last_four' => '4242',
                 'cardholder_name' => 'Juan Pérez',
@@ -49,7 +41,7 @@ class UserPaymentMethodTest extends TestCase
             ],
         ]);
 
-        $this->assertDatabaseHas('user_payment_methods', [
+        $this->assertDatabaseHas('payment_methods', [
             'user_id' => $this->user->id,
             'last_four' => '4242',
         ]);
@@ -58,8 +50,7 @@ class UserPaymentMethodTest extends TestCase
     public function test_authenticated_user_can_create_payment_method_with_full_card_number(): void
     {
         $response = $this->actingAs($this->user, 'sanctum')
-            ->postJson('/api/user-payment-methods', [
-                'payment_method_id' => $this->paymentMethod->id,
+            ->postJson('/api/payment-methods', [
                 'card_brand' => 'Mastercard',
                 'card_number' => '4532 1234 5678 9876',
                 'cardholder_name' => 'María Silva',
@@ -76,7 +67,7 @@ class UserPaymentMethodTest extends TestCase
             ],
         ]);
 
-        $this->assertDatabaseHas('user_payment_methods', [
+        $this->assertDatabaseHas('payment_methods', [
             'user_id' => $this->user->id,
             'last_four' => '9876',
         ]);
@@ -84,9 +75,8 @@ class UserPaymentMethodTest extends TestCase
 
     public function test_authenticated_user_can_list_their_payment_methods(): void
     {
-        UserPaymentMethod::create([
+        PaymentMethod::create([
             'user_id' => $this->user->id,
-            'payment_method_id' => $this->paymentMethod->id,
             'card_brand' => 'Mastercard',
             'last_four' => '5555',
             'cardholder_name' => 'Juan Pérez',
@@ -96,7 +86,7 @@ class UserPaymentMethodTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user, 'sanctum')
-            ->getJson('/api/user-payment-methods');
+            ->getJson('/api/payment-methods');
 
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data');
@@ -105,9 +95,8 @@ class UserPaymentMethodTest extends TestCase
 
     public function test_authenticated_user_can_delete_their_payment_method(): void
     {
-        $card = UserPaymentMethod::create([
+        $card = PaymentMethod::create([
             'user_id' => $this->user->id,
-            'payment_method_id' => $this->paymentMethod->id,
             'card_brand' => 'AMEX',
             'last_four' => '3000',
             'cardholder_name' => 'Juan Pérez',
@@ -116,18 +105,17 @@ class UserPaymentMethodTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user, 'sanctum')
-            ->deleteJson("/api/user-payment-methods/{$card->id}");
+            ->deleteJson("/api/payment-methods/{$card->id}");
 
         $response->assertStatus(204);
-        $this->assertDatabaseMissing('user_payment_methods', ['id' => $card->id]);
+        $this->assertDatabaseMissing('payment_methods', ['id' => $card->id]);
     }
 
     public function test_user_cannot_access_another_users_payment_method(): void
     {
         $otherUser = User::factory()->create();
-        $card = UserPaymentMethod::create([
+        $card = PaymentMethod::create([
             'user_id' => $otherUser->id,
-            'payment_method_id' => $this->paymentMethod->id,
             'card_brand' => 'Visa',
             'last_four' => '9999',
             'cardholder_name' => 'Otro Usuario',
@@ -136,7 +124,7 @@ class UserPaymentMethodTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user, 'sanctum')
-            ->getJson("/api/user-payment-methods/{$card->id}");
+            ->getJson("/api/payment-methods/{$card->id}");
 
         $response->assertStatus(403);
     }

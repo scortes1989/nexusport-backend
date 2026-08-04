@@ -24,7 +24,6 @@ class OrderResource extends JsonResource
             'estimatedDispatchDate' => $this->estimated_dispatch_date ? $this->estimated_dispatch_date->toDateString() : null,
             'estimatedDeliveryDate' => $this->estimated_delivery_date ? $this->estimated_delivery_date->toDateString() : null,
             'payment' => new PaymentResource($this->payment),
-            'paymentMethod' => new PaymentMethodResource($this->paymentMethod),
             'commune' => new CommuneResource($this->commune),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
         ];

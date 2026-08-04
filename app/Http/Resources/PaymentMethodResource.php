@@ -11,9 +11,14 @@ class PaymentMethodResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
-            'code' => $this->code,
-            'logo' => $this->logo,
+            'userId' => $this->user_id,
+            'cardBrand' => $this->card_brand,
+            'lastFour' => $this->last_four,
+            'cardholderName' => $this->cardholder_name,
+            'expirationMonth' => $this->expiration_month,
+            'expirationYear' => $this->expiration_year,
+            'isDefault' => (bool) $this->is_default,
+            'createdAt' => $this->created_at,
         ];
     }
 }

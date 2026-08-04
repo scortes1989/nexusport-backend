@@ -44,7 +44,6 @@ class OrderController extends Controller
                     'subtotal' => $subtotal,
                     'total' => $total,
                     'status' => 'paid',
-                    'payment_method_id' => $request->payment_method_id,
                     'estimated_dispatch_date' => $dates['estimated_dispatch_date'],
                     'estimated_delivery_date' => $dates['estimated_delivery_date'],
                 ]);
@@ -63,7 +62,6 @@ class OrderController extends Controller
 
                 Payment::create([
                     'order_id' => $order->id,
-                    'payment_method_id' => $request->payment_method_id,
                     'amount' => $total,
                     'status' => 'completed',
                     'transaction_id' => 'TX-' . strtoupper(Str::random(12)),
@@ -74,7 +72,7 @@ class OrderController extends Controller
                 return $order;
             });
 
-            $order->load(['items.product', 'items.productSize', 'commune', 'paymentMethod', 'payment']);
+            $order->load(['items.product', 'items.productSize', 'commune', 'payment']);
 
             return new OrderResource($order);
 
@@ -89,7 +87,7 @@ class OrderController extends Controller
     {
         $orders = $request->user()
             ->orders()
-            ->with(['items.product', 'items.productSize', 'commune', 'paymentMethod', 'payment'])
+            ->with(['items.product', 'items.productSize', 'commune', 'payment'])
             ->latest()
             ->get();
 
@@ -108,7 +106,7 @@ class OrderController extends Controller
         }
         $order = $query->firstOrFail();
 
-        $order->load(['items.product', 'items.productSize', 'commune', 'paymentMethod', 'payment']);
+        $order->load(['items.product', 'items.productSize', 'commune', 'payment']);
         return new OrderResource($order);
     }
 }

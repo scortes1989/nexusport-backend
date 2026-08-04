@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreUserPaymentMethodRequest extends FormRequest
+class StorePaymentMethodRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,7 +14,6 @@ class StoreUserPaymentMethodRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_method_id' => ['required', 'integer', 'exists:payment_methods,id'],
             'card_brand' => ['required', 'string', 'max:50'],
             'card_number' => ['nullable', 'string', 'min:13', 'max:25'],
             'last_four' => ['required_without:card_number', 'nullable', 'string'],
