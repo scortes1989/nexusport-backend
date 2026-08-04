@@ -13,15 +13,7 @@ class PaymentMethod extends Model
 
     protected $table = 'payment_methods';
 
-    protected $fillable = [
-        'user_id',
-        'card_brand',
-        'last_four',
-        'cardholder_name',
-        'expiration_month',
-        'expiration_year',
-        'is_default',
-    ];
+    protected $guarded = [];
 
     protected $casts = [
         'is_default' => 'boolean',

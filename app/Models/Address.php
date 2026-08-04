@@ -11,13 +11,7 @@ class Address extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id',
-        'commune_id',
-        'name',
-        'address',
-        'is_default',
-    ];
+    protected $guarded = [];
 
     protected $casts = [
         'is_default' => 'boolean',
