@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\RegisterController;
 
 use App\Http\Controllers\Api\AddressController;
 
+use App\Http\Controllers\Api\UserPaymentMethodController;
+
 // Auth Routes
 Route::post('/register', RegisterController::class);
 Route::post('/login', [AuthController::class, 'store']);
@@ -29,6 +31,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('addresses', AddressController::class);
     Route::post('/addresses/{address}/set-default', [AddressController::class, 'setDefault']);
+
+    Route::apiResource('user-payment-methods', UserPaymentMethodController::class);
+    Route::post('/user-payment-methods/{userPaymentMethod}/set-default', [UserPaymentMethodController::class, 'setDefault']);
 });
 
 Route::get('/categories', [CategoryController::class, 'index']);
