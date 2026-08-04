@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\RegisterController;
 use App\Http\Controllers\Api\AddressController;
 
 use App\Http\Controllers\Api\PaymentMethodController;
+use App\Http\Controllers\Api\CouponController;
 
 // Auth Routes
 Route::post('/register', RegisterController::class);
@@ -45,6 +46,7 @@ Route::put('/cart/{cartItem}', [CartController::class, 'update']);
 Route::delete('/cart/{cartItem}', [CartController::class, 'destroy']);
 
 Route::get('/communes', [CommuneController::class, 'index']);
+Route::post('/coupons/validate', [CouponController::class, 'validateCoupon']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/{order}', [OrderController::class, 'show']);
 

@@ -12,6 +12,7 @@ class Order extends Model
     protected $casts = [
         'estimated_dispatch_date' => 'date',
         'estimated_delivery_date' => 'date',
+        'discount_amount' => 'float',
     ];
 
     protected static function booted(): void
@@ -44,5 +45,10 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function coupon()
+    {
+        return $this->belongsTo(Coupon::class);
     }
 }

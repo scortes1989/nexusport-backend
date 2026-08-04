@@ -18,6 +18,7 @@ class OrderResource extends JsonResource
             'shippingAddress' => $this->shipping_address,
             'shippingCost' => (float) $this->shipping_cost,
             'subtotal' => (float) $this->subtotal,
+            'discountAmount' => (float) $this->discount_amount,
             'total' => (float) $this->total,
             'status' => $this->status,
             'createdAt' => $this->created_at ? $this->created_at->toISOString() : null,
@@ -25,6 +26,7 @@ class OrderResource extends JsonResource
             'estimatedDeliveryDate' => $this->estimated_delivery_date ? $this->estimated_delivery_date->toDateString() : null,
             'payment' => new PaymentResource($this->payment),
             'commune' => new CommuneResource($this->commune),
+            'coupon' => $this->coupon ? new CouponResource($this->coupon) : null,
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
         ];
     }

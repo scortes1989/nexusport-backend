@@ -13,6 +13,7 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Commune;
 use App\Models\CartItem;
+use App\Models\Coupon;
 use App\Http\Resources\OrderResource;
 
 class OrderController extends Controller
@@ -29,7 +30,32 @@ class OrderController extends Controller
 
                 $commune = Commune::findOrFail($request->commune_id);
                 $shippingCost = (float) $commune->shipping_price;
-                $total = $subtotal + $shippingCost;
+
+                $couponId = null;
+                $discountAmount = 0.0;
+
+                if ($request->filled('coupon_code')) {
+                    $code = strtoupper(trim($request->input('coupon_code')));
+                    $coupon = Coupon::where('code', $code)->first();
+
+                    if (!$coupon) {
+                        throw ValidationException::withMessages([
+                            'coupon_code' => 'El cupón ingresado no existe.',
+                        ]);
+                    }
+
+                    $validityError = $coupon->checkValidity($subtotal);
+                    if ($validityError) {
+                        throw ValidationException::withMessages([
+                            'coupon_code' => $validityError,
+                        ]);
+                    }
+
+                    $couponId = $coupon->id;
+                    $discountAmount = $coupon->calculateDiscount($subtotal, $shippingCost);
+                }
+
+                $total = max(0.0, $subtotal + $shippingCost - $discountAmount);
 
                 $dates = $commune->calculateDeliveryDates();
 
@@ -40,6 +66,8 @@ class OrderController extends Controller
                     'customer_email' => $request->email,
                     'shipping_address' => $request->address,
                     'commune_id' => $request->commune_id,
+                    'coupon_id' => $couponId,
+                    'discount_amount' => $discountAmount,
                     'shipping_cost' => $shippingCost,
                     'subtotal' => $subtotal,
                     'total' => $total,
@@ -72,7 +100,7 @@ class OrderController extends Controller
                 return $order;
             });
 
-            $order->load(['items.product', 'items.productSize', 'commune', 'payment']);
+            $order->load(['items.product', 'items.productSize', 'commune', 'payment', 'coupon']);
 
             return new OrderResource($order);
 
@@ -87,7 +115,7 @@ class OrderController extends Controller
     {
         $orders = $request->user()
             ->orders()
-            ->with(['items.product', 'items.productSize', 'commune', 'payment'])
+            ->with(['items.product', 'items.productSize', 'commune', 'payment', 'coupon'])
             ->latest()
             ->get();
 
@@ -106,7 +134,7 @@ class OrderController extends Controller
         }
         $order = $query->firstOrFail();
 
-        $order->load(['items.product', 'items.productSize', 'commune', 'payment']);
+        $order->load(['items.product', 'items.productSize', 'commune', 'payment', 'coupon']);
         return new OrderResource($order);
     }
 }

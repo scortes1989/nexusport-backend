@@ -27,6 +27,7 @@ class StoreOrderRequest extends FormRequest
             'email' => 'required|email|max:255',
             'address' => 'required|string|max:255',
             'commune_id' => 'required|exists:communes,id',
+            'coupon_code' => 'nullable|string',
         ];
     }
 
