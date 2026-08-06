@@ -293,7 +293,7 @@ class OrderTest extends TestCase
         ]);
 
         $createResponse->assertStatus(201);
-        $createResponse->assertJsonFragment(['userId' => $user->id]);
+        $createResponse->assertJsonFragment(['customerName' => 'Usuario Registrado']);
 
         // Fetch my-orders
         $myOrdersResponse = $this->withHeader('Authorization', "Bearer {$token}")

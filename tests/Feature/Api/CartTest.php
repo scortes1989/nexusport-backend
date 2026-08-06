@@ -47,8 +47,6 @@ class CartTest extends TestCase
             'data' => [
                 'id',
                 'quantity',
-                'productSizeId',
-                'size',
                 'product',
                 'productSize',
             ]
