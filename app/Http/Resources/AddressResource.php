@@ -13,10 +13,9 @@ class AddressResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'address' => $this->address,
-            'communeId' => $this->commune_id,
-            'commune' => new CommuneResource($this->commune),
             'isDefault' => (bool) $this->is_default,
             'createdAt' => $this->created_at,
+            'commune' => new CommuneResource($this->commune),
         ];
     }
 }
